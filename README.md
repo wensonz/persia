@@ -1,0 +1,1 @@
+Persia is design to provide a high performance, durable, pub/sub-enabling, distributed message queue service.
