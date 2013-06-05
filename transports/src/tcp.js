@@ -202,7 +202,8 @@ Condotti.add('persia.transports.tcp', function (C) {
      *                            some error occurs.
      */
     TcpTransportServer.prototype.start = function(callback) {
-        var self = this;
+        var logger = C.logging.getStepLogger(this.logger_);
+            
         if (null !== this.server_) {
             this.logger_.debug('The underlying tcp server is already running,' +
                                ' nothing is to be done.');
@@ -210,25 +211,43 @@ Condotti.add('persia.transports.tcp', function (C) {
             return;
         }
         
-        this.server_ = C.natives.net.createServer(this.config_, 
-                                                  function (socket) {
-            var transport = new C.persia.transports.tcp.TcpTransport(socket);
-            self.logger_.debug('New client TCP socket ' + socket.remoteAddress +
-                               ':' + socket.remotePort + ' is accepted.');
-            self.emit('transport', transport);
-        });
+        this.server_ = C.natives.net.createServer(
+            this.config_,
+            this.onSocketConnected_.bind(this)
+        );
+        
+        logger.start('Starting the underlying TCP server ' + this.id);
         // Since current node.js implementation sets SO_REUSEADDR already,
         // 'error' events are not handled here
-        this.server_.listen(this.config_.port, this.config_.address, function (error) {
-            if (error) {
-                self.logger_.debug('The underlying tcp server fails to listen' +
-                                   ' on ' + self.config_.address + ':' + 
-                                   self.config_.port + '. Error: ' + 
-                                   C.lang.inspect(error));
+        this.server_.listen(
+            this.config_.port, 
+            this.config_.address, 
+            function (error) {
+                if (error) {
+                    logger.error(error);
+                } else {
+                    logger.done();
+                }
+                
+                callback(error);
             }
-            
-            callback(error);
-        });
+        );
+    };
+    
+    /**
+     * event handler to be called when client connects
+     * 
+     * @method onSocketConnected_
+     * @param {Socket} socket the client socket connected
+     */
+    TcpTransportServer.prototype.onSocketConnected_ = function (socket) {
+        var transport = null;
+        
+        transport = new C.persia.transports.tcp.TcpTransport(socket);
+        
+        this.logger_.debug('New client TCP socket ' + socket.remoteAddress +
+                           ':' + socket.remotePort + ' is accepted.');
+        this.emit('transport', transport);
     };
     
     /**
