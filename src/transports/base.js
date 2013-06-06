@@ -13,19 +13,10 @@ Condotti.add('persia.transports.base', function (C) {
      * @class Transport
      * @constructor
      * @extends EventEmitter
-     * @param {String} id the id of the transport
      */
-    function Transport (id) {
+    function Transport () {
         /* inheritance */
         this.super();
-        
-        /**
-         * The id of this transport
-         * 
-         * @property id
-         * @type String
-         */
-        this.id = id;
         
         /**
          * The logger instance
@@ -37,6 +28,25 @@ Condotti.add('persia.transports.base', function (C) {
     }
     
     C.lang.inherit(Transport, C.events.EventEmitter);
+    
+    /**
+     * Connect this transport to the server according to the config specified
+     * during construction.
+     * 
+     * @method connect
+     * @param {Function} callback the callback function to be invoked after the
+     *                            transport has successfully connected to the
+     *                            desired server, or some error occurs. The
+     *                            signature of the callback is 
+     *                            'function (error) {}'
+     */
+    Transport.prototype.connect = function (callback) {
+        callback(new C.errors.NotImplementedError('Method connect is not ' +
+                                                  'implemented in this class,' +
+                                                  ' and is expected to be ' +
+                                                  'overwritten in child ' +
+                                                  'classes'));
+    };
     
     /**
      * Write data to the transport, and the passed-in callback is to be
@@ -95,7 +105,11 @@ Condotti.add('persia.transports.base', function (C) {
      * @return {String} the string representation of the transport
      */
     Transport.prototype.toString = function() {
-        return this.id;
+        throw new C.errors.NotImplementedError('Method toString is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
     };
     
     C.namespace('persia.transports').Transport = Transport;
@@ -137,19 +151,10 @@ Condotti.add('persia.transports.base', function (C) {
      *
      * @class TransportServer
      * @constructor
-     * @param {String} id the id of this server
      */
-    function TransportServer(id) {
+    function ServerTransport() {
         /* inheritance */
         this.super();
-        
-        /**
-         * The id of this server
-         *
-         * @property id
-         * @type String
-         */
-        this.id = id;
         
         /**
          * The logger instance
@@ -160,21 +165,21 @@ Condotti.add('persia.transports.base', function (C) {
         this.logger_ = C.logging.getObjectLogger(this);
     }
     
-    C.lang.inherit(TransportServer, C.events.EventEmitter);
+    C.lang.inherit(ServerTransport, C.events.EventEmitter);
 
     /**
-     * Start the transport server.
+     * Bind the server transport to the desired endpoint and listen on.
      *
-     * @method start
+     * @method listen
      * @param {Function} callback the callback function to be invoked when
      *                            the server is started successfully, or
      *                            some error occurs. The signature of the
      *                            callback is 'function (error) {}'.
      */
-    TransportServer.prototype.start = function(callback) {
-        callback(new C.errors.NotImplementedError('Method start is not ' +
+    ServerTransport.prototype.listen = function(callback) {
+        callback(new C.errors.NotImplementedError('Method listen is not ' +
                                                   'implemented in ' +
-                                                  'TransportServer, '+
+                                                  'ServerTransport, '+
                                                   'and is expected to' +
                                                   ' be overwritten in' +
                                                   ' child classes.'));
@@ -182,15 +187,15 @@ Condotti.add('persia.transports.base', function (C) {
 
 
     /**
-     * Stop the transport server.
+     * Close the server transport.
      *
-     * @method stop
+     * @method close
      * @param {Function} callback the callback function to be invoked after the
      *                            server is closed successfully, or some error
      *                            occurs. The signature of the callback is
      *                            'function (error) {}'.
      */
-    TransportServer.prototype.stop = function(callback) {
+    ServerTransport.prototype.close = function(callback) {
         callback(new C.errors.NotImplementedError('Method stop is not ' +
                                                   'implemented in ' +
                                                   'TransportServer, ' +
@@ -205,78 +210,14 @@ Condotti.add('persia.transports.base', function (C) {
      * @method toString
      * @return {String} the string representation of the transport server
      */
-    TransportServer.prototype.toString = function() {
-        return this.id;
+    ServerTransport.prototype.toString = function() {
+        throw new C.errors.NotImplementedError('Method toString is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
     };
     
-    C.namespace('persia.transports').TransportServer = TransportServer;
-    
-    
-    /**
-     * The abstract base class TransportFactory is designed to provide the
-     * management functionalities of the tranport related facilities, such
-     * as createTransport, createTransportServer, etc. However, even though
-     * this class is to be plugged into the condotti instance, the descendants
-     * of the factory, such as TcpTransportFactory, are gonna replace it when 
-     * being attached, in order to provide the concrete functionalities.
-     *
-     * @class TransportFactory
-     * @constructor
-     */
-    function TransportFactory() {
-        /**
-         * The logger instance
-         *
-         * @property logger_
-         * @type Logger
-         */
-        this.logger_ = C.logging.getObjectLogger(this);
-    }
-    
-    /**
-     * Create a transport based on the configure obtained during initialization.
-     * This method is not implemented in this base class, and is expected to be
-     * overwritten in the child classes.
-     *
-     * @method createTransport
-     * @param {Function} callback the callback function to be invoked after the
-     *                            transport has connected with the other point
-     *                            successfully, or some error occurs. The 
-     *                            signature of the callback is like 
-     *                            'function (error, transport) {}'.
-     */
-    TransportFactory.prototype.createTransport = function(callback) {
-        callback(new C.errors.NotImplementedError('Method createTransport is' + 
-                                                  ' not implmented in this ' +
-                                                  'base class, and is ' +
-                                                  'expected to be overwritten' +
-                                                  ' in child classes'));
-    };
-    
-    /**
-     * Create a transport server based on the configure obtained during
-     * initialization. Note that these two member functions may not be able to
-     * be both available according to the configuration, for example, if the 
-     * configuration object contains the information about the remote address
-     * to be connected to, then the createTransportServer of the 
-     * TcpTransportFactory would be not available.
-     *
-     * @method createTransportServer
-     * @param {Function} callback the callback function to be invoked after the
-     *                            server is created successfully, or some error
-     *                            occurs. The signature of the callback is like
-     *                            'function (error, server) {}'.
-     */
-    TransportFactory.prototype.createTransportServer = function(callback) {
-        callback(new C.errors.NotImplementedError('Method ' +
-                                                  'createTransportServer is ' +
-                                                  'not implmented in this ' +
-                                                  'base class, and is ' +
-                                                  'expected to be overwritten' +
-                                                  ' in child classes'));
-    };
-    
-    C.namespace('persia.transports').TransportFactory = TransportFactory;
-    
+    C.namespace('persia.transports').ServerTransport = ServerTransport;
     
 }, '0.0.1', { requires: [] });
