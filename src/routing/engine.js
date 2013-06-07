@@ -1,27 +1,23 @@
 /**
- * This module defines the basic behaviours a router is expected to have.
+ * This module defines the basic behaviours a routing engine is expected to 
+ * have.
  * 
- * @module persia.routers.base
+ * @module persia.routing.engine
  */
-Condotti.add('persia.routers.base', function (C) {
+Condotti.add('persia.routing.engine', function (C) {
     
     /**
-     * This Router class is the abstract base of all concrete router 
-     * implementations, and defines the basic behaviours a router is expected to
-     * have.
+     * This Engine class is the abstract base of all concrete routing engine 
+     * implementations, and defines the basic behaviours a routing engine is 
+     * expected to have.
      * 
-     * @class Router
+     * @class Engine
      * @constructor
-     * @param {Object} config the config for this router
+     * @extends EventEmitter
      */
-    function Router(config) {
-        /**
-         * The config object for this router
-         * 
-         * @property config_
-         * @type Object
-         */
-        this.config_ = config;
+    function Engine() {
+        /* inheritance */
+        this.super();
         
         /**
          * The logger instance for this router
@@ -30,16 +26,9 @@ Condotti.add('persia.routers.base', function (C) {
          * @type Logger
          */
         this.logger_ = C.logging.getObjectLogger(this);
-        
-        /**
-         * The routing table
-         * 
-         * @property table_
-         * @type Object
-         * @default {}
-         */
-        this.table_ = {};
     }
+    
+    C.lang.inherit(Engine, C.events.EventEmitter);
     
     /**
      * Route the passed-in message and invoke the callback when the message has
@@ -56,7 +45,7 @@ Condotti.add('persia.routers.base', function (C) {
      *                            identifier of the destinations that confirm
      *                            receiving the message.
      */
-    Router.prototype.route = function (message, callback) {
+    Engine.prototype.route = function (message, callback) {
         callback(new C.errors.NotImplementedError('This route method is not' +
                                                   ' implemented in this base' +
                                                   'class, and is expected to ' +
@@ -64,6 +53,6 @@ Condotti.add('persia.routers.base', function (C) {
                                                   'child classes'));
     };
     
-    C.namespace('persia.routers').Router = Router;
+    C.namespace('persia.routing').Engine = Engine;
     
 }, '0.0.1', { requires: ['persia.messages.base'] });
