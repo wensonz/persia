@@ -60,11 +60,11 @@ Condotti.add('persia.transports.tcp', function (C) {
         /**
          * Whether the transport is writable now
          * 
-         * @property writable
+         * @property writable_
          * @type Boolean
          * @default false
          */
-        this.writable = false;
+        this.writable_ = false;
         
         /* intialization */
         if (C.lang.reflect.getObjectType(config) === C.natives.net.Socket) {
@@ -122,7 +122,7 @@ Condotti.add('persia.transports.tcp', function (C) {
             } else {
                 logger.done();
                 self.socket_ = socket;
-                self.writable = true;
+                self.writable_ = true;
             }
             callback(error);
         });
@@ -149,7 +149,7 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpTransport.prototype.onSocketDrain_ = function() {
         this.logger_.debug('The underlying socket ' + this.id +
                            ' is now writable.');
-        this.writable = true;
+        this.writable_ = true;
         this.emit('drain');
     };
     
@@ -188,7 +188,7 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpTransport.prototype.write = function(data, callback) {
         var logger = C.logging.getStepLogger(this.logger_);
         
-        if (!this.writable) {
+        if (!this.writable_) {
             this.logger_.error('Underlying socket ' + this.id + 
                                ' is not writable');
             callback(new C.persia.errors.ShouldPauseError(this));
@@ -198,7 +198,7 @@ Condotti.add('persia.transports.tcp', function (C) {
         logger.start('Writing ' + data.length + ' bytes to underlying TCP ' +
                      'socket ' + this.toString());
                      
-        this.writable = this.socket_.write(data, function (error) {
+        this.writable_ = this.socket_.write(data, function (error) {
             if (error) {
                 logger.error(error);
                 callback(error);
@@ -208,7 +208,7 @@ Condotti.add('persia.transports.tcp', function (C) {
             callback();
         });
         
-        return this.writable;
+        return this.writable_;
     };
     
     /**
@@ -224,7 +224,7 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpTransport.prototype.close = function(callback) {
         this.socket_.end();
         this.socket_ = null;
-        this.writable = false;
+        this.writable_ = false;
         
         callback && callback();
     };
