@@ -73,6 +73,7 @@ Condotti.add('persia.transports.tcp', function (C) {
             this.host_ = this.socket_.remoteAddress;
             this.port_ = this.socket_.remotePort;
             this.client_ = false;
+            this.writable_ = true;
         } else {
             // TODO: validations
             this.host_ = config.host;
@@ -137,7 +138,7 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpTransport.prototype.onSocketData_ = function(data) {
         this.logger_.debug(data.length + ' bytes binary data [' + 
                            data.toString('hex') + '] is received from ' +
-                           'underlying socket ' + this.id);
+                           'underlying socket ' + this.toString());
         this.emit('data', data);
     };
     
@@ -147,7 +148,7 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @method onSocketDrain_
      */
     TcpTransport.prototype.onSocketDrain_ = function() {
-        this.logger_.debug('The underlying socket ' + this.id +
+        this.logger_.debug('The underlying socket ' + this.toString() +
                            ' is now writable.');
         this.writable_ = true;
         this.emit('drain');
@@ -170,7 +171,7 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @param {Error} error the error occurs
      */
     TcpTransport.prototype.onSocketError_ = function(error) {
-        this.logger_.debug('The underlying socket ' + this.id + 
+        this.logger_.debug('The underlying socket ' + this.toString() + 
                            'fails. Error: ' + C.lang.reflect.inspect(error));
         
         this.emit('error', error);
@@ -189,7 +190,7 @@ Condotti.add('persia.transports.tcp', function (C) {
         var logger = C.logging.getStepLogger(this.logger_);
         
         if (!this.writable_) {
-            this.logger_.error('Underlying socket ' + this.id + 
+            this.logger_.error('Underlying socket ' + this.toString() + 
                                ' is not writable');
             callback(new C.persia.errors.ShouldPauseError(this));
             return;
@@ -257,13 +258,22 @@ Condotti.add('persia.transports.tcp', function (C) {
         this.super();
         
         /**
+         * The config object for this server transport
+         * 
+         * @property config_
+         * @type Object
+         * @deafult {}
+         */
+        this.config_ = config || {};
+        
+        /**
          * The address this server transport is to listen on
          *
          * @property address_
          * @type String
          * @default null
          */
-        this.address_ = config.address;
+        this.address_ = this.config_.address;
         
         /**
          * The port this server transport is to listen on
@@ -272,7 +282,7 @@ Condotti.add('persia.transports.tcp', function (C) {
          * @type Number
          * @default 8080
          */
-        this.port_ = config.port || 8000;
+        this.port_ = this.config_.port || 8000;
         
         /**
          * The internal node.js TCP server socket instance

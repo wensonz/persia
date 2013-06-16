@@ -144,12 +144,12 @@ Condotti.add('persia.transports.base', function (C) {
     C.namespace('persia.errors').ShouldPauseError = ShouldPauseError;
     
     /**
-     * The abstract base class TransportServer is designed to define the
+     * The abstract base class ServerTransport is designed to define the
      * behaviours that all transport servers are expected to have, such as
      * accepting the client transports, emitting events when client connects,
      * etc.
      *
-     * @class TransportServer
+     * @class ServerTransport
      * @constructor
      */
     function ServerTransport() {
