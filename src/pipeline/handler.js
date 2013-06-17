@@ -2,9 +2,9 @@
  * This module contains the definition of the abstract base Handler, 
  * which is the simulation of the ChannelHandler of the JAVA framework Netty.
  * 
- * @module persia.handlers.base
+ * @module persia.pipeline.handler
  */
-Condotti.add('persia.handlers.base', function (C) {
+Condotti.add('persia.pipeline.handler', function (C) {
 
     /**
      * This Handler class is the abstract base of all handlers for the channel
@@ -64,6 +64,6 @@ Condotti.add('persia.handlers.base', function (C) {
                                                   'classes.'));
     };
     
-    C.namespace('persia.handlers').Handler = Handler;
+    C.namespace('persia.pipeline').Handler = Handler;
 
 }, '0.0.1', { requires: [] });

@@ -11,7 +11,7 @@ C = condotti.Condotti({
     }}
 });
 
-logger = C.logging.getStepLogger(C.logging.getLogger(__filename));
+logger = C.logging.getStepLogger(C.logging.getLogger(natives.path.basename(__filename)));
 
 C.async.waterfall([
     function (next) { // load tcp module
@@ -34,7 +34,7 @@ C.async.waterfall([
                 transport.close(function (error) {
                     process.exit(error ? 1 : 0);
                 });
-            })
+            });
         });
         server.listen(next);
     },

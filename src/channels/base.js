@@ -122,8 +122,7 @@ Condotti.add('persia.channels.base', function (C) {
      *                            'function (error) {}'
      */
     Channel.prototype.write = function (message, callback) {
-        var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+        var logger = C.logging.getStepLogger(this.logger_);
             
         logger.start('Writing down the message ' + 
                      C.lang.reflect.inspect(message) + 
@@ -151,8 +150,7 @@ Condotti.add('persia.channels.base', function (C) {
      *                            'function (error) {}'
      */
     Channel.prototype.close = function (callback) {
-        var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+        var logger = C.logging.getStepLogger(this.logger_);
         
         logger.start('Closing the underlying transport ' + 
                      C.lang.reflect.inspect(this.transport_));
@@ -279,8 +277,7 @@ Condotti.add('persia.channels.base', function (C) {
      *                            'function (error) {}'
      */
     ServerChannel.prototype.close = function (callback) {
-        var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+        var logger = C.logging.getStepLogger(this.logger_);
             
         logger.start('Closing the underlying server transport ' +
                      C.lang.reflect.inspect(this.server_));
