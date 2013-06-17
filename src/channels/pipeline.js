@@ -165,6 +165,8 @@ Condotti.add('persia.channels.pipeline', function (C) {
         this.handlers_ = handlers;
     }
     
+    C.lang.inherit(PipelineServerChannel, C.persia.channels.ServerChannel);
+    
     /**
      * The "connected" event handler for the underlying server transport
      *

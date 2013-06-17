@@ -6,11 +6,11 @@
  * @module persia.pipeline.json-codec
  */
 Condotti.add('persia.pipeline.json-codec', function (C) {
-
+    
     /**
      * This JsonCodecHandler is a child class of the abstract base class
      * Handler, and designed to encode/decode the outbound/inbound message
-     * into/from JSON string.
+     * into/from JSON string in a buffer.
      * 
      * @class JsonCodecHandler
      * @constructor
@@ -36,7 +36,7 @@ Condotti.add('persia.pipeline.json-codec', function (C) {
      */
     JsonCodecHandler.prototype.handleInbound = function (data, callback) {
         try {
-            callback(null, JSON.parse(data));
+            callback(null, JSON.parse(data.toString()));
         } catch (e) {
             callback(e);
         }
@@ -55,7 +55,7 @@ Condotti.add('persia.pipeline.json-codec', function (C) {
      */
     JsonCodecHandler.prototype.handleOutbound = function (data, callback) {
         try {
-            callback(null, JSON.stringify(data));
+            callback(null, new Buffer(JSON.stringify(data)));
         } catch (e) {
             callback(e);
         }

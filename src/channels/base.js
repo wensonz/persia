@@ -152,9 +152,40 @@ Condotti.add('persia.channels.base', function (C) {
     Channel.prototype.close = function (callback) {
         var logger = C.logging.getStepLogger(this.logger_);
         
+        if (!callback) {
+            callback = function () {};
+        }
+        
         logger.start('Closing the underlying transport ' + 
                      C.lang.reflect.inspect(this.transport_));
         this.transport_.close(function (error) {
+            if (error) {
+                logger.error(error);
+            } else {
+                logger.done();
+            }
+            
+            callback(error);
+        });
+    };
+    
+    /**
+     * Connect this channel to the specified server channel
+     *
+     * @method connect
+     * @param {Function} callback the callback function to be invoked after the
+     *                            channel has been successfully connected to the
+     *                            specified server channel, or some error 
+     *                            occurs. The signature of the callback is
+     *                            'function (error) {}'  
+     */
+    Channel.prototype.connect = function (callback) {
+        var logger = C.logging.getStepLogger(this.logger_);
+        
+        logger.start('Connecting the underlying transport ' + 
+                     C.lang.reflect.inspect(this.transport_) + 
+                     ' to its pre-specified server transport');
+        this.transport_.connect(function (error) {
             if (error) {
                 logger.error(error);
             } else {
@@ -278,7 +309,11 @@ Condotti.add('persia.channels.base', function (C) {
      */
     ServerChannel.prototype.close = function (callback) {
         var logger = C.logging.getStepLogger(this.logger_);
-            
+        
+        if (!callback) {
+            callback = function () {};
+        }
+        
         logger.start('Closing the underlying server transport ' +
                      C.lang.reflect.inspect(this.server_));
                      

@@ -73,7 +73,7 @@ C.async.waterfall([
         client.on('message', function (message) {
             console.log('>>> Message from server: ');
             console.log('  * result = ' + message.result);
-            client.close();
+            client.close(function () {});
         });
         client.connect(next);
     },
