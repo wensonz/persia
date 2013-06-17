@@ -123,6 +123,8 @@ Condotti.add('persia.channels.base', function (C) {
      */
     Channel.prototype.write = function (message, callback) {
         var logger = C.logging.getStepLogger(this.logger_);
+        
+        callback = callback || function () {};
             
         logger.start('Writing down the message ' + 
                      C.lang.reflect.inspect(message) + 

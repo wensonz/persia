@@ -28,6 +28,14 @@ Condotti.add('persia.channels.pipeline', function (C) {
          * @type Array
          */
         this.handlers_ = handlers;
+        
+        /* initialize */
+        if (!Array.isArray(handlers)) {
+            // in case the handlers are passed in as function param separately
+            // which mainly occurs when this channel is initialized by dotti
+            // facotry
+            this.handlers_ = Array.prototype.slice.call(arguments, 1);
+        }
     }
     
     C.lang.inherit(PipelineChannel, C.persia.channels.Channel);
@@ -88,6 +96,8 @@ Condotti.add('persia.channels.pipeline', function (C) {
         var self = this,
             logger = C.logging.getStepLogger(this.logger_),
             first = true;
+        
+        callback = callback || function () {};
         
         C.async.reduceRight(this.handlers_, message, function (reduced, handler, 
                                                                next) {
