@@ -71,9 +71,13 @@ Condotti.add('persia.servers.simple', function (C) {
         this.router_ = this.factory_.get('router');
         
         this.router_.on('message', function (message) {
-            self.logger_.info('[MESSAGE] [SRC: ' + message.source + 
-                              '] [TARGETS: ' + message.targets.join(', ') + 
-                              '] [TYPE: ' + message.type + ']');
+            self.logger_.info(
+                '[MESSAGE] ' +
+                '[ID: ' + message.id + '] ' +
+                '[SOURCE: ' + message.source + '] ' + 
+                '[TARGETS: ' + message.targets.join(', ') + '] ' +
+                '[TYPE: ' + message.type + ']'
+            );
             self.logger_.debug('[DETAILS: ' + C.lang.reflect.inspect(message) + 
                                ']');
             self.router_.route(message);
