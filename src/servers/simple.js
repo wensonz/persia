@@ -31,22 +31,14 @@ Condotti.add('persia.servers.simple', function (C) {
         this.server_ = null;
         
         /**
-         * The internal router for message routing
+         * The factory collection contains the dotti factory instance, session
+         * factory instance and topic factory instance, etc.
          * 
-         * @property router_
-         * @type Router
-         * @deafult null
+         * @property factories_
+         * @type Object
+         * @deafult {}
          */
-        this.router_ = null;
-        
-        /**
-         * The dotti factory used to create other instances
-         * 
-         * @property factory_
-         * @type DottiFactory
-         * @deafult null
-         */
-        this.factory_ = null;
+        this.factories_ = {};
         
         /* initialize */
         this.initialize_();
@@ -66,25 +58,51 @@ Condotti.add('persia.servers.simple', function (C) {
         var self = this;
         
         this.logger_.info('Initializing internal components ...');
-        this.factory_ = new C.di.DottiFactory(this.config_.dotti);
-        this.server_ = this.factory_.get('server');
-        this.router_ = this.factory_.get('router');
+        this.factories_.dotti = new C.di.DottiFactory(this.config_.dotti);
         
-        this.router_.on('message', function (message) {
-            self.logger_.info(
-                '[MESSAGE] ' +
-                '[ID: ' + message.id + '] ' +
-                '[SOURCE: ' + message.source + '] ' + 
-                '[TARGETS: ' + message.targets.join(', ') + '] ' +
-                '[TYPE: ' + message.type + ']'
-            );
-            self.logger_.debug('[DETAILS: ' + C.lang.reflect.inspect(message) + 
-                               ']');
-            self.router_.route(message);
-        });
+        this.factories_.topic = this.factories_.dotti.get('topic');
+        this.factories_.session = this.factories_.dotti.get('session');
+        
+        this.server_ = this.factory_.get('server');
+        this.server_.on('channel', this.onChannelConnected_.bind(this));
         
         this.logger_.info('Server initialized.');
     };
+    
+    /**
+     * The "channel" event handler for the underlying server channel
+     *
+     * @method onChannelConnected_
+     * @param {Channel} channel the client channel connected
+     */
+    SimpleServer.prototype.onChannelConnected_ = function (channel) {
+        var self = this;
+        
+        channel.once('message', function (message) {
+            var session = null;
+            try {
+                session = self.factories_.session.createSession(channel, 
+                                                                message);
+            } catch (e) {
+                
+                channel.close();
+            }
+            
+            session.on('error', function (error) {
+                channel.close();
+            });
+            session.on('end', function () {
+                channel.close();
+            });
+            
+            session.start(function (error) {
+                if (error) {
+                    channel.close();
+                }
+            });
+        });
+    };
+    
     
     /**
      * Start this server
