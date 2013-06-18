@@ -1,6 +1,6 @@
 /**
  * This module contains the definitions of the abstract base classes of
- * Transport, TransportServer and TransportFactory.
+ * Transport and ServerTransport.
  * 
  * @module persia.transports.base
  */
@@ -19,15 +19,46 @@ Condotti.add('persia.transports.base', function (C) {
         this.super();
         
         /**
+         * Whether the transport is writable
+         *
+         * @property writable
+         * @type Boolean
+         * @default false
+         */
+        this.writable = false;
+        
+        /**
          * The logger instance
          *
          * @property logger_
          * @type Logger
          */
         this.logger_ = C.logging.getObjectLogger(this);
+        
+        /**
+         * The id of this transport
+         *
+         * @property id
+         * @type String
+         */
+        Object.defineProperty(this, 'id', { get: this.getId_ });
     }
     
     C.lang.inherit(Transport, C.events.EventEmitter);
+    
+    /**
+     * Return the id of the transport
+     * 
+     * @method getId_
+     * @return {String} the identifier of this transport
+     */
+    Transport.prototype.getId_ = function () {
+        throw new C.errors.NotImplementedError('Method getId_ is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
+    };
     
     /**
      * Connect this transport to the server according to the config specified
@@ -66,10 +97,7 @@ Condotti.add('persia.transports.base', function (C) {
      *                            data has been successfully written to the
      *                            transport, or some error occurs. The signature
      *                            of the callback is like
-     *                            'function (error) {}'.
-     * @return {Boolean} false if the data can not be fully or partially written
-     *                   into the underlying component, otherwise true is 
-     *                   returned
+     *                            'function (error, writable) {}'.
      */
     Transport.prototype.write = function (data, callback) {
         callback(new C.errors.NotImplementedError('Method write is not ' +
@@ -77,7 +105,6 @@ Condotti.add('persia.transports.base', function (C) {
                                                   ' and is expected to be ' +
                                                   'overwritten in child ' +
                                                   'classes'));
-        return false;
     };
     
     /**
@@ -95,7 +122,6 @@ Condotti.add('persia.transports.base', function (C) {
                                                   ' and is expected to be ' +
                                                   'overwritten in child ' +
                                                   'classes'));
-
     };
 
     /**
@@ -105,11 +131,7 @@ Condotti.add('persia.transports.base', function (C) {
      * @return {String} the string representation of the transport
      */
     Transport.prototype.toString = function() {
-        throw new C.errors.NotImplementedError('Method toString is not ' +
-                                               'implemented in this class,' +
-                                               ' and is expected to be ' +
-                                               'overwritten in child ' +
-                                               'classes');
+        return this.id;
     };
     
     C.namespace('persia.transports').Transport = Transport;
@@ -163,10 +185,32 @@ Condotti.add('persia.transports.base', function (C) {
          * @type Logger
          */
         this.logger_ = C.logging.getObjectLogger(this);
+        
+        /**
+         * The id of this transport
+         *
+         * @property id
+         * @type String
+         */
+        Object.defineProperty(this, 'id', { get: this.getId_ });
     }
     
     C.lang.inherit(ServerTransport, C.events.EventEmitter);
-
+    
+    /**
+     * Return the id of the transport
+     * 
+     * @method getId_
+     * @return {String} the identifier of this transport
+     */
+    ServerTransport.prototype.getId_ = function () {
+        throw new C.errors.NotImplementedError('Method getId_ is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
+    };
+    
     /**
      * Bind the server transport to the desired endpoint and listen on.
      *
@@ -211,11 +255,7 @@ Condotti.add('persia.transports.base', function (C) {
      * @return {String} the string representation of the transport server
      */
     ServerTransport.prototype.toString = function() {
-        throw new C.errors.NotImplementedError('Method toString is not ' +
-                                               'implemented in this class,' +
-                                               ' and is expected to be ' +
-                                               'overwritten in child ' +
-                                               'classes');
+        return this.id;
     };
     
     C.namespace('persia.transports').ServerTransport = ServerTransport;

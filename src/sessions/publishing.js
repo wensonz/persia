@@ -68,7 +68,7 @@ Condotti.add('persia.sessions.publishing', function (C) {
                            ' succeed.');
         this.channel_.close(function (error) {
             self.channel_ = null; // close anyway
-            callback();
+            callback && callback();
         });
     };
     

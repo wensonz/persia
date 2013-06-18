@@ -74,7 +74,8 @@ Condotti.add('persia.sessions.subscription', function (C) {
         
         this.logger_.debug('Subscription on topic ' + this.message_.topic + 
                            ' succeed.');
-        callback();
+                           
+        callback && callback();
     };
     
     /**

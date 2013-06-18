@@ -28,7 +28,7 @@ Condotti.add('persia.transports.tcp', function (C) {
          * @property host_
          * @type String
          */
-        this.host_ = null;
+        this.host_ = config.host;
         
         /**
          * The port number this tcp transport connects to. Like the host_
@@ -37,7 +37,7 @@ Condotti.add('persia.transports.tcp', function (C) {
          * @property port_
          * @type Number
          */
-        this.port_ = null;
+        this.port_ = config.port;
         
         /**
          * The internal TCP socket
@@ -47,41 +47,42 @@ Condotti.add('persia.transports.tcp', function (C) {
          * @default socket
          */
         this.socket_ = null;
-        
-        /**
-         * Whether this transport is a client transport
-         * 
-         * @property client_
-         * @type Boolean
-         * @default true
-         */
-        this.client_ = true;
-        
-        /**
-         * Whether the transport is writable now
-         * 
-         * @property writable_
-         * @type Boolean
-         * @default false
-         */
-        this.writable_ = false;
-        
-        /* intialization */
-        if (C.lang.reflect.getObjectType(config) === C.natives.net.Socket) {
-            this.socket_ = config;
-            this.bindSocketEvents_(this.socket_);
-            this.host_ = this.socket_.remoteAddress;
-            this.port_ = this.socket_.remotePort;
-            this.client_ = false;
-            this.writable_ = true;
-        } else {
-            // TODO: validations
-            this.host_ = config.host;
-            this.port_ = config.port;
-        }
     }
     
     C.lang.inherit(TcpTransport, C.persia.transports.Transport);
+    
+    /**
+     * Create a new tcp transport from an established socket, which normally 
+     * accepted by a socket server.
+     *
+     * @method createFromSocket
+     * @param {Socket} socket the accepted socket
+     * @return {Transport} the new created wrapper transport
+     */
+    TcpTransport.createFromSocket = function (socket) {
+        var transport = null,
+            config = {};
+        
+        config.host = socket.remoteAddress;
+        config.port = socket.remotePort;
+        
+        transport = new TcpTransport(config);
+        transport.socket_ = socket;
+        transport.writable = true;
+        transport.bindSocketEvents_();
+        
+        return transport;
+    };
+    
+    /**
+     * Return the id of the transport
+     * 
+     * @method getId_
+     * @return {String} the identifier of this transport
+     */
+    TcpTransport.prototype.getId_ = function () {
+        return 'tcp@' + this.host_ + ':' + this.port_;
+    };
     
     /**
      * Bind the event handlers for the underlying socket
@@ -108,7 +109,6 @@ Condotti.add('persia.transports.tcp', function (C) {
      *                            'function (error) {}'
      */
     TcpTransport.prototype.connect = function (callback) {
-        // TODO: check if it's a client transport
         var self = this,
             logger = C.logging.getStepLogger(this.logger_),
             socket = null;
@@ -117,15 +117,18 @@ Condotti.add('persia.transports.tcp', function (C) {
         this.bindSocketEvents_(socket);
         
         logger.start('Connecting to ' + this.host_ + ':' + this.port_);
-        socket.connect({ host: this.host_, port: this.port_ }, function (error) {
+        socket.connect({
+            host: this.host_, port: this.port_ 
+        }, function (error) {
             if (error) {
                 logger.error(error);
-            } else {
-                logger.done();
-                self.socket_ = socket;
-                self.writable_ = true;
+                callback(error);
+                return;
             }
-            callback(error);
+            logger.done();
+            self.socket_ = socket;
+            self.writable = true;
+            callback();
         });
     };
     
@@ -136,9 +139,6 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @param {Buffer} data the data received
      */
     TcpTransport.prototype.onSocketData_ = function(data) {
-        this.logger_.debug(data.length + ' bytes binary data [' + 
-                           data.toString('hex') + '] is received from ' +
-                           'underlying socket ' + this.toString());
         this.emit('data', data);
     };
     
@@ -148,9 +148,9 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @method onSocketDrain_
      */
     TcpTransport.prototype.onSocketDrain_ = function() {
-        this.logger_.debug('The underlying socket ' + this.toString() +
+        this.logger_.debug('The underlying socket ' + this.id + 
                            ' is now writable.');
-        this.writable_ = true;
+        this.writable = true;
         this.emit('drain');
     };
     
@@ -160,7 +160,10 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @method onSocketEnd_
      */
     TcpTransport.prototype.onSocketEnd_ = function() {
-        this.logger_.debug('The other end socket has been closed.');
+        this.logger_.debug('Peer ' + this.host_ + ':' + this.port_ + 
+                           ' has closed the connection.');
+        this.writable = false;
+        this.socket_ = null;
         this.emit('end');
     };
     
@@ -171,9 +174,11 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @param {Error} error the error occurs
      */
     TcpTransport.prototype.onSocketError_ = function(error) {
-        this.logger_.debug('The underlying socket ' + this.toString() + 
-                           'fails. Error: ' + C.lang.reflect.inspect(error));
-        
+        this.logger_.debug('The underlying socket ' + this.id + 
+                           ' fails. Error: ' + C.lang.reflect.inspect(error));
+        this.socket_.destroy();
+        this.writable = false;
+        this.socket_ = null;
         this.emit('error', error);
     };
     
@@ -184,22 +189,22 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @param {Buffer} data the data buffer to be written
      * @param {Function} callback the callback function to be invoked after the
      *                            data has been successfully written.
-     * @return {Boolean} the same return as the one of `net.Socket.write`
      */
     TcpTransport.prototype.write = function(data, callback) {
-        var logger = C.logging.getStepLogger(this.logger_);
+        var logger = null;
         
-        if (!this.writable_) {
-            this.logger_.error('Underlying socket ' + this.toString() + 
+        if (!this.writable) {
+            this.logger_.error('Underlying socket ' + this.id + 
                                ' is not writable');
             callback(new C.persia.errors.ShouldPauseError(this));
             return;
         }
         
-        logger.start('Writing ' + data.length + ' bytes to underlying TCP ' +
-                     'socket ' + this.toString());
+        logger = C.logging.getStepLogger(this.logger_);
+        logger.start('Writing ' + data.length + 
+                     ' bytes onto underlying socket ' + this.id);
                      
-        this.writable_ = this.socket_.write(data, function (error) {
+        this.writable = this.socket_.write(data, function (error) {
             if (error) {
                 logger.error(error);
                 callback(error);
@@ -208,8 +213,6 @@ Condotti.add('persia.transports.tcp', function (C) {
             logger.done();
             callback();
         });
-        
-        return this.writable_;
     };
     
     /**
@@ -225,7 +228,7 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpTransport.prototype.close = function(callback) {
         this.socket_.end();
         this.socket_ = null;
-        this.writable_ = false;
+        this.writable = false;
         
         callback && callback();
     };
