@@ -69,9 +69,9 @@ Condotti.add('persia.transports.base', function (C) {
      *                            transport has successfully connected to the
      *                            desired server, or some error occurs. The
      *                            signature of the callback is 
-     *                            'function (error) {}'
+     *                            'function () {}'
      */
-    Transport.prototype.connect = function (callback) {
+    Transport.prototype.connect = function () {
         callback(new C.errors.NotImplementedError('Method connect is not ' +
                                                   'implemented in this class,' +
                                                   ' and is expected to be ' +
@@ -97,14 +97,14 @@ Condotti.add('persia.transports.base', function (C) {
      *                            data has been successfully written to the
      *                            transport, or some error occurs. The signature
      *                            of the callback is like
-     *                            'function (error) {}'.
+     *                            'function () {}'.
      */
     Transport.prototype.write = function (data, callback) {
-        callback(new C.errors.NotImplementedError('Method write is not ' +
-                                                  'implemented in this class,' +
-                                                  ' and is expected to be ' +
-                                                  'overwritten in child ' +
-                                                  'classes'));
+        throw new C.errors.NotImplementedError('Method write is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes'));
     };
     
     /**

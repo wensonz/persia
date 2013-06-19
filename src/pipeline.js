@@ -14,13 +14,25 @@ Condotti.add('persia.pipeline', function (C) {
      * @class Pipeline
      * @constructor
      * @extends EventEmitter
-     * @param {Transport} transport the underlying transport for data
-     *                              transportation
-     * @param {Array} handlers an array of pipeline handlers
+     * @param {Object} context the context object for this pipeline, which is
+     *                         expected to contain all the necessary info for
+     *                         the pipeline and its handlers to processing
+     *                         the inbound/outbound data. There are at least
+     *                         two items in this context, the transport and
+     *                         the handlers with the key "transport" and
+     *                         "handlers" separately.
      */
-    function Pipeline (transport, handlers) {
+    function Pipeline (context) {
         /* inheritance */
         this.super();
+        
+        /**
+         * The context object for this pipeline
+         * 
+         * @property context_
+         * @type Object
+         */
+        this.context_ = context;
         
         /**
          * The underlying transport for the data transportation
@@ -28,7 +40,7 @@ Condotti.add('persia.pipeline', function (C) {
          * @property transport_
          * @type Transport
          */
-        this.transport_ = transport;
+        this.transport_ = context.transport;
         
         /**
          * The inbound pipeline handler collection
@@ -36,7 +48,7 @@ Condotti.add('persia.pipeline', function (C) {
          * @property inbounds_
          * @type Array
          */
-        this.inbounds_ = handlers;
+        this.inbounds_ = context.handlers;
         
         /**
          * The outbound pipeline handler collection
@@ -81,8 +93,12 @@ Condotti.add('persia.pipeline', function (C) {
         this.outbounds_ = this.inbounds_.slice(0);
         this.outbounds_.reverse();
         this.outbounds_.push(
-            new C.persia.handlers.TransportHandler('transport', this.transport_)
+            new C.persia.handlers.TransportHandler()
         );
+        
+        this.context_.inbounds = this.inbounds_;
+        this.context_.outbounds = this.outbounds_;
+        this.context_.pipeline = this;
         
         this.transport_.on('data', this.onTransportData_.bind(this));
         // this.transport_.on('error', this.onTransportError_.bind(this));
@@ -91,35 +107,34 @@ Condotti.add('persia.pipeline', function (C) {
     };
     
     /**
+     * Clone the context object
+     *
+     * @method cloneContext_
+     * @return {Object} the cloned context object
+     */
+    Pipeline.prototype.cloneContext_ = function () {
+        var context = {},
+            key = null;
+        
+        for (key in this.context_) {
+            context[key] = this.context_[key];
+        }
+        
+        return context;
+    };
+    
+    
+    /**
      * The "data" event handler for the underlying transport
      *
      * @method onTransportData_
      * @param {Buffer} data the received data from the underlying transport
      */
     Pipeline.prototype.onTransportData_ = function (data) {
-        var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+        var context = null;
             
-        //
-        C.async.reduce(this.inbounds_, data, function (reduced, handler, next) {
-            
-            logger.done(reduced);
-            logger.start('Handling the inbound data ' + 
-                         C.lang.reflect.inspect(reduced) + ' with handler ' +
-                         handler.name);
-                         
-            handler.handleInbound(reduced, next);
-            
-        }, function (error, result) {
-            if (error) {
-                logger.error(error);
-                self.emit('error', error);
-                return;
-            }
-            
-            logger.done(result);
-            self.emit('data', result);
-        });
+        context = this.cloneContext_();
+        this.handlers_[0].handleInbound(context, data);
     };
     
     /**
@@ -135,7 +150,10 @@ Condotti.add('persia.pipeline', function (C) {
      */
     Pipeline.prototype.write = function (data, callback) {
         var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+            context = null;
+        
+        context = this.cloneContext_();
+        // context.callback = function ()
         
         C.async.reduce(this.outbounds_, data, function (reduced, handler, 
                                                         next) {

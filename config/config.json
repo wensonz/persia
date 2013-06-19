@@ -1,0 +1,9 @@
+{
+    "condotti": {
+        "loader": {
+            "paths": {
+                "persia": ""
+            }
+        }
+    }
+}

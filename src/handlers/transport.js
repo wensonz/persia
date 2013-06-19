@@ -16,51 +16,23 @@ Condotti.add('persia.handlers.transport', function (C) {
      * @constructor
      * @extends Handler
      * @param {String} name the name of the handler
-     * @param {Transport} transport the underlying transport to write data to
      */
-    function TransportHandler (name, transport) {
+    function TransportHandler (name) {
         /* inheritance */
         this.super(name);
-        
-        /**
-         * The underlying transport to write to
-         * 
-         * @property transport_
-         * @type Transport
-         */
-        this.transport_ = transport;
     }
     
     C.lang.inherit(TransportHandler, C.persia.handlers.Handler);
     
     /**
-     * Handle the inbound data/message and invoke the specified callback
-     * 
-     * @method handleInbound
-     * @param {Object|Buffer} data the data/message to be handled
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
-     */
-    TransportHandler.prototype.handleInbound = function (data, callback) {
-        callback(null, data);
-    };
-    
-    /**
      * Handle the outbound data/message and invoke the specified callback
      * 
      * @method handleOutbound
-     * @param {Object|Buffer} data the data/message to be handled
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
+     * @param {Object} context the context object for the pipeline
+     * @param {Buffer} data the data to be handled
      */
-    TransportHandler.prototype.handleOutbound = function (data, callback) {
-        this.transport_.write(data, callback);
+    TransportHandler.prototype.handleOutbound = function (context, data) {
+        context.transport.write(data, context.callback);
     };
     
     C.namespace('persia.handlers').TransportHandler = TransportHandler;

@@ -31,45 +31,85 @@ Condotti.add('persia.handlers.base', function (C) {
          * @type String
          */
         this.name = name || C.lang.reflect.getFunctionName(this.constructor);
+        
+        /**
+         * The next handler in the handler chain. The chain starts with the
+         * most lowest one above the transport, say, inbound direction
+         * 
+         * @property next
+         * @type Handler
+         * @deafult null
+         */
+        this.next = null;
+        
+        /**
+         * The previous handler in the handler chain
+         * 
+         * @property prev
+         * @type Handler
+         * @deafult null
+         */
+        this.prev = null;
     }
     
     /**
-     * Handle the inbound data/message and invoke the specified callback
+     * Handle the inbound data and invoke the specified callback
      * 
      * @method handleInbound
-     * @param {Object|Buffer} data the data/message to be handled
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
+     * @param {Object} context the context object for the pipeline
+     * @param {Object} data the data to be handled
      */
-    Handler.prototype.handleInbound = function (data, callback) {
-        callback(new C.errors.NotImplementedError('This handleInbound method ' +
-                                                  'is not' +
-                                                  ' implemented in this class' +
-                                                  ' and is expected to be ' +
-                                                  'overwritten in the child ' +
-                                                  'classes.'));
+    Handler.prototype.handleInbound = function (context, data) {
+        this.fireInbound_(context, data);
     };
     
     /**
-     * Handle the outbound data/message and invoke the specified callback
+     * Handle the outbound data and invoke the specified callback
      * 
      * @method handleOutbound
-     * @param {Object|Buffer} data the data/message to be handled
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
+     * @param {Object} context the context object for the pipeline
+     * @param {Object} data the data to be handled
      */
-    Handler.prototype.handleOutbound = function (data, callback) {
-        callback(new C.errors.NotImplementedError('This handleOutbound method' +
-                                                  ' is not implemented in ' +
-                                                  'this class and is expected' +
-                                                  ' to be overwritten in the' +
-                                                  ' child classes.'));
+    Handler.prototype.handleOutbound = function (context, data) {
+        this.fireOutbound_(context, data);
+    };
+    
+    /**
+     * Find the next outbound handler and invoke it
+     * 
+     * @method fireOutbound_
+     * @param {Object} context the context object for the pipeline
+     * @param {Object} data the data to be handled
+     */
+    Handler.prototype.fireOutbound_ = function (context, data) {
+        var handler = this.prev;
+        
+        if (!handler) {
+            return;
+        }
+        
+        C.lang.nextTick(function () {
+            handler.handleOutbound(context, data);
+        });
+    };
+    
+    /**
+     * Find the next inbound handler and invoke it
+     * 
+     * @method fireInbound_
+     * @param {Object} context the context object for the pipeline
+     * @param {Object} data the data to be handled
+     */
+    Handler.prototype.fireInbound_ = function (context, data) {
+        var handler = this.next;
+        
+        if (!handler) {
+            return;
+        }
+        
+        C.lang.nextTick(function () {
+            handler.handleOutbound(context, data);
+        });
     };
     
     C.namespace('persia.handlers').Handler = Handler;
