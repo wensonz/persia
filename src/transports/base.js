@@ -1,6 +1,6 @@
 /**
  * This module contains the definitions of the abstract base classes of
- * Transport and ServerTransport.
+ * Transport, ServerTransport and TransportFactory.
  * 
  * @module persia.transports.base
  */
@@ -97,7 +97,7 @@ Condotti.add('persia.transports.base', function (C) {
      *                            data has been successfully written to the
      *                            transport, or some error occurs. The signature
      *                            of the callback is like
-     *                            'function (error, writable) {}'.
+     *                            'function (error) {}'.
      */
     Transport.prototype.write = function (data, callback) {
         callback(new C.errors.NotImplementedError('Method write is not ' +
@@ -223,7 +223,7 @@ Condotti.add('persia.transports.base', function (C) {
     ServerTransport.prototype.listen = function(callback) {
         callback(new C.errors.NotImplementedError('Method listen is not ' +
                                                   'implemented in ' +
-                                                  'ServerTransport, '+
+                                                  'this class, '+
                                                   'and is expected to' +
                                                   ' be overwritten in' +
                                                   ' child classes.'));
@@ -242,7 +242,7 @@ Condotti.add('persia.transports.base', function (C) {
     ServerTransport.prototype.close = function(callback) {
         callback(new C.errors.NotImplementedError('Method stop is not ' +
                                                   'implemented in ' +
-                                                  'TransportServer, ' +
+                                                  'this class, ' +
                                                   'and is expected to' +
                                                   ' be overwritten in' +
                                                   ' child classes'));
@@ -259,5 +259,56 @@ Condotti.add('persia.transports.base', function (C) {
     };
     
     C.namespace('persia.transports').ServerTransport = ServerTransport;
+    
+    
+    /**
+     * This TransportFactory class is the abstract base of all concrete
+     * transport factory implementations and is a similar definition as the
+     * SocketFactory in JAVA
+     *
+     * @class TransportFactory
+     * @constructor
+     */
+    function TransportFactory () {
+        /**
+         * The logger instance for this factory
+         *
+         * @property logger_
+         * @type Logger
+         */
+        this.logger_ = C.logging.getObjectLogger(this);
+    }
+    
+    /**
+     * Create a client transport
+     *
+     * @method createTransport
+     * @param {}  
+     * @return {Transport} the new created client transport
+     */
+    TransportFactory.prototype.createTransport = function () {
+        throw new C.errors.NotImplementedError('Method createTransport is not' +
+                                               ' implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
+    };
+    
+    /**
+     * Create a server transport
+     *
+     * @method createServerTransport
+     * @param {}  
+     * @return {ServerTransport} the new created server transport
+     */
+    TransportFactory.prototype.createServerTransport = function () {
+        throw new C.errors.NotImplementedError('Method createServerTransport ' +
+                                               'is not implemented in this ' +
+                                               'class, and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
+    };
+    
+    C.namespace('persia.transports').TransportFactory = TransportFactory;
     
 }, '0.0.1', { requires: [] });

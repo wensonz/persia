@@ -4,9 +4,9 @@
  * encoder/decoder of the 32bit header of the frame, which indicates the length 
  * of the body of the frame in bytes.
  * 
- * @module persia.pipeline.fixed-length-frame
+ * @module persia.handlers.fixed-length-frame
  */
-Condotti.add('persia.pipeline.fixed-length-frame', function (C) {
+Condotti.add('persia.handlers.fixed-length-frame', function (C) {
 
     /**
      * This FixedLengthFrameHandler class is a child of the abstract base
@@ -201,6 +201,6 @@ Condotti.add('persia.pipeline.fixed-length-frame', function (C) {
         return data.length - start - left;
     };
     
-    C.namespace('persia.pipeline').FixedLengthFrameHandler = FixedLengthFrameHandler;
+    C.namespace('persia.handlers').FixedLengthFrameHandler = FixedLengthFrameHandler;
 
-}, '0.0.1', { requires: ['persia.pipeline.handler'] });
+}, '0.0.1', { requires: ['persia.handlers.base'] });

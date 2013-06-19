@@ -3,9 +3,9 @@
  * a child of the abstract base class Handler and designed to encode/decode the
  * outbound/inbound data into/from JSON string.
  * 
- * @module persia.pipeline.json-codec
+ * @module persia.handlers.json-codec
  */
-Condotti.add('persia.pipeline.json-codec', function (C) {
+Condotti.add('persia.handlers.json-codec', function (C) {
     
     /**
      * This JsonCodecHandler is a child class of the abstract base class
@@ -61,6 +61,6 @@ Condotti.add('persia.pipeline.json-codec', function (C) {
         }
     };
     
-    C.namespace('persia.pipeline').JsonCodecHandler = JsonCodecHandler;
+    C.namespace('persia.handlers').JsonCodecHandler = JsonCodecHandler;
 
-}, '0.0.1', { requires: ['persia.pipeline.handler'] });
+}, '0.0.1', { requires: ['persia.handlers.base'] });

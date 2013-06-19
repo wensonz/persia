@@ -2,9 +2,9 @@
  * This module contains the definition of the abstract base Handler, 
  * which is the simulation of the ChannelHandler of the JAVA framework Netty.
  * 
- * @module persia.pipeline.handler
+ * @module persia.handlers.base
  */
-Condotti.add('persia.pipeline.handler', function (C) {
+Condotti.add('persia.handlers.base', function (C) {
 
     /**
      * This Handler class is the abstract base of all handlers for the channel
@@ -13,8 +13,9 @@ Condotti.add('persia.pipeline.handler', function (C) {
      * 
      * @class Handler
      * @constructor
+     * @param {String} name the name of this handler
      */
-    function Handler() {
+    function Handler(name) {
         /**
          * The logger instance for this handler
          * 
@@ -22,6 +23,14 @@ Condotti.add('persia.pipeline.handler', function (C) {
          * @type Logger
          */
         this.logger_ = C.logging.getObjectLogger(this);
+        
+        /**
+         * The name of this handler
+         * 
+         * @property name
+         * @type String
+         */
+        this.name = name || C.lang.reflect.getFunctionName(this.constructor);
     }
     
     /**
@@ -56,14 +65,13 @@ Condotti.add('persia.pipeline.handler', function (C) {
      *                            'function (error, result) {}'
      */
     Handler.prototype.handleOutbound = function (data, callback) {
-        callback(new C.errors.NotImplementedError('This handleOutbound method ' +
-                                                  'is not' +
-                                                  ' implemented in this class' +
-                                                  ' and is expected to be ' +
-                                                  'overwritten in the child ' +
-                                                  'classes.'));
+        callback(new C.errors.NotImplementedError('This handleOutbound method' +
+                                                  ' is not implemented in ' +
+                                                  'this class and is expected' +
+                                                  ' to be overwritten in the' +
+                                                  ' child classes.'));
     };
     
-    C.namespace('persia.pipeline').Handler = Handler;
+    C.namespace('persia.handlers').Handler = Handler;
 
 }, '0.0.1', { requires: [] });

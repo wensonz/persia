@@ -200,19 +200,10 @@ Condotti.add('persia.transports.tcp', function (C) {
             return;
         }
         
-        logger = C.logging.getStepLogger(this.logger_);
-        logger.start('Writing ' + data.length + 
-                     ' bytes onto underlying socket ' + this.id);
-                     
-        this.writable = this.socket_.write(data, function (error) {
-            if (error) {
-                logger.error(error);
-                callback(error);
-                return;
-            }
-            logger.done();
-            callback();
-        });
+        
+        this.logger_.debug('Writing ' + data.length + 
+                     ' bytes onto underlying socket ' + this.id + ' ...');
+        this.writable = this.socket_.write(data, callback);
     };
     
     /**
@@ -226,22 +217,12 @@ Condotti.add('persia.transports.tcp', function (C) {
      *                   triggered once the `net.Socket.end` returns.
      */
     TcpTransport.prototype.close = function(callback) {
+        
         this.socket_.end();
         this.socket_ = null;
         this.writable = false;
         
         callback && callback();
-    };
-    
-    /**
-     * Return the string representation of this TCP transport
-     * 
-     * @method toString
-     * @return {String} the string representation of this TCP transport
-     */
-    TcpTransport.prototype.toString = function () {
-        return 'tcp(' + (this.client_ ? '>' : '<') + this.host_ + ':' + 
-               this.port_ + ')';
     };
     
     C.namespace('persia.transports.tcp').TcpTransport = TcpTransport;
@@ -300,6 +281,16 @@ Condotti.add('persia.transports.tcp', function (C) {
     C.lang.inherit(TcpServerTransport, C.persia.transports.ServerTransport);
     
     /**
+     * Return the id of the transport
+     * 
+     * @method getId_
+     * @return {String} the identifier of this transport
+     */
+    TcpServerTransport.prototype.getId_ = function () {
+        return 'tcp.server@' + this.address_ + ':' + this.port_;
+    };
+    
+    /**
      * Start this TCP server by calling its listen method
      *
      * @method listen
@@ -310,30 +301,31 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpServerTransport.prototype.listen = function(callback) {
         var logger = C.logging.getStepLogger(this.logger_),
             self = this,
-            server = null;
+            server = null,
+            handler = null;
             
         if (null !== this.server_) {
-            this.logger_.debug('The underlying tcp server is already running,' +
-                               ' nothing is to be done.');
-            C.lang.nextTick(callback);
+            this.logger_.debug('The underlying tcp server ' + this.id + 
+                               ' has already been running.');
+            callback();
             return;
         }
         
         server = C.natives.net.createServer(this.onSocketConnected_.bind(this));
+        handler = function (error) {
+            logger.error(error);
+            callback(error);
+        };
+        server.once('error', handler);
         
         logger.start('Starting the underlying TCP server @' + this.address_ + 
                      ':' + this.port_);
-        // Since current node.js implementation sets SO_REUSEADDR already,
-        // 'error' events are not handled here
-        server.listen(this.port_, this.address_, function (error) {
-            if (error) {
-                logger.error(error);
-            } else {
-                logger.done();
-                self.server_ = server;
-            }
-            
-            callback(error);
+        
+        server.listen(this.port_, this.address_, function () {
+            logger.done();
+            server.removeListener('error', handler);
+            self.server_ = server;
+            callback();
         });
     };
     
@@ -346,9 +338,9 @@ Condotti.add('persia.transports.tcp', function (C) {
     TcpServerTransport.prototype.onSocketConnected_ = function (socket) {
         var transport = null;
         
-        transport = new TcpTransport(socket);
-        this.logger_.debug('New client TCP socket ' + socket.remoteAddress +
-                           ':' + socket.remotePort + ' is accepted.');
+        transport = TcpTransport.createFromSocket(socket);
+        this.logger_.debug('New client TCP transport ' + transport.id + 
+                           ' is accepted.');
         this.emit('transport', transport);
     };
     
@@ -363,32 +355,62 @@ Condotti.add('persia.transports.tcp', function (C) {
         var self = this,
             logger = C.logging.getStepLogger(this.logger_);
         
-        logger.start('Stopping the underlying TCP server @' + this.address_ + 
-                     ':' + this.port_);
-                     
-        this.server_.close(function (error) {
+        logger.start('Stopping the underlying TCP server socket ' + this.id);
+        this.server_.close(function () {
             self.server_ = null;
-            
-            if (error) {
-                logger.error(error);
-            } else {
-                logger.done();
-            }
-            
-            callback(error);
+            logger.done();
+            callback();
         });
     };
     
+    C.namespace('persia.transports.tcp').TcpServerTransport = TcpServerTransport;
+    
     /**
-     * Return the string representation of this TCP server transport
-     * 
-     * @method toString
-     * @return {String} the string representation of this TCP server transport
+     * This TransportFactory class is the abstract base of all concrete
+     * transport factory implementations and is a similar definition as the
+     * SocketFactory in JAVA
+     *
+     * @class TransportFactory
+     * @constructor
      */
-    TcpServerTransport.prototype.toString = function () {
-        return 'tcp(=' + this.host_ + ':' + this.port_ + ')';
+    function TcpTransportFactory () {
+        /**
+         * The logger instance for this factory
+         *
+         * @property logger_
+         * @type Logger
+         */
+        this.logger_ = C.logging.getObjectLogger(this);
+    }
+    
+    /**
+     * Create a client transport
+     *
+     * @method createTransport
+     * @param {}  
+     * @return {Transport} the new created client transport
+     */
+    TransportFactory.prototype.createTransport = function () {
+        throw new C.errors.NotImplementedError('Method createTransport is not' +
+                                               ' implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
     };
     
-    C.namespace('persia.transports.tcp').TcpServerTransport = TcpServerTransport;
+    /**
+     * Create a server transport
+     *
+     * @method createServerTransport
+     * @param {}  
+     * @return {ServerTransport} the new created server transport
+     */
+    TransportFactory.prototype.createServerTransport = function () {
+        throw new C.errors.NotImplementedError('Method createServerTransport ' +
+                                               'is not implemented in this ' +
+                                               'class, and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes');
+    };
     
 }, '0.0.1', { requires: ['persia.transports.base'] });
