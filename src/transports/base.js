@@ -65,18 +65,13 @@ Condotti.add('persia.transports.base', function (C) {
      * during construction.
      * 
      * @method connect
-     * @param {Function} callback the callback function to be invoked after the
-     *                            transport has successfully connected to the
-     *                            desired server, or some error occurs. The
-     *                            signature of the callback is 
-     *                            'function () {}'
      */
     Transport.prototype.connect = function () {
-        callback(new C.errors.NotImplementedError('Method connect is not ' +
-                                                  'implemented in this class,' +
-                                                  ' and is expected to be ' +
-                                                  'overwritten in child ' +
-                                                  'classes'));
+        throw new C.errors.NotImplementedError('Method connect is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes'));
     };
     
     /**
@@ -111,17 +106,13 @@ Condotti.add('persia.transports.base', function (C) {
      * Close this transport
      *
      * @method close
-     * @param {Function} callback the callback function to be invoked after the
-     *                            transport is successfully closed, or some
-     *                            error occurs. The signature of the callback
-     *                            is like 'function (error) {}'.
      */
-    Transport.prototype.close = function(callback) {
-        callback(new C.errors.NotImplementedError('Method closed is not ' +
-                                                  'implemented in this class,' +
-                                                  ' and is expected to be ' +
-                                                  'overwritten in child ' +
-                                                  'classes'));
+    Transport.prototype.close = function() {
+        throw new C.errors.NotImplementedError('Method closed is not ' +
+                                               'implemented in this class,' +
+                                               ' and is expected to be ' +
+                                               'overwritten in child ' +
+                                               'classes'));
     };
 
     /**
@@ -215,18 +206,14 @@ Condotti.add('persia.transports.base', function (C) {
      * Bind the server transport to the desired endpoint and listen on.
      *
      * @method listen
-     * @param {Function} callback the callback function to be invoked when
-     *                            the server is started successfully, or
-     *                            some error occurs. The signature of the
-     *                            callback is 'function (error) {}'.
      */
-    ServerTransport.prototype.listen = function(callback) {
-        callback(new C.errors.NotImplementedError('Method listen is not ' +
-                                                  'implemented in ' +
-                                                  'this class, '+
-                                                  'and is expected to' +
-                                                  ' be overwritten in' +
-                                                  ' child classes.'));
+    ServerTransport.prototype.listen = function() {
+        throw new C.errors.NotImplementedError('Method listen is not ' +
+                                               'implemented in ' +
+                                               'this class, '+
+                                               'and is expected to' +
+                                               ' be overwritten in' +
+                                               ' child classes.'));
     };
 
 
@@ -234,13 +221,9 @@ Condotti.add('persia.transports.base', function (C) {
      * Close the server transport.
      *
      * @method close
-     * @param {Function} callback the callback function to be invoked after the
-     *                            server is closed successfully, or some error
-     *                            occurs. The signature of the callback is
-     *                            'function (error) {}'.
      */
-    ServerTransport.prototype.close = function(callback) {
-        callback(new C.errors.NotImplementedError('Method stop is not ' +
+    ServerTransport.prototype.close = function() {
+        throw new C.errors.NotImplementedError('Method stop is not ' +
                                                   'implemented in ' +
                                                   'this class, ' +
                                                   'and is expected to' +
@@ -283,7 +266,6 @@ Condotti.add('persia.transports.base', function (C) {
      * Create a client transport
      *
      * @method createTransport
-     * @param {}  
      * @return {Transport} the new created client transport
      */
     TransportFactory.prototype.createTransport = function () {
@@ -298,7 +280,6 @@ Condotti.add('persia.transports.base', function (C) {
      * Create a server transport
      *
      * @method createServerTransport
-     * @param {}  
      * @return {ServerTransport} the new created server transport
      */
     TransportFactory.prototype.createServerTransport = function () {

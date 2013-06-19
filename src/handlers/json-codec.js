@@ -27,18 +27,15 @@ Condotti.add('persia.handlers.json-codec', function (C) {
      * Decode the inbound data as JSON string into message object
      * 
      * @method handleInbound
+     * @param {Object} context the context object for the pipeline
      * @param {Buffer} data the data to be decoded
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
      */
-    JsonCodecHandler.prototype.handleInbound = function (data, callback) {
+    JsonCodecHandler.prototype.handleInbound = function (context, data) {
         try {
-            callback(null, JSON.parse(data.toString()));
+            this.fireInbound_(context, JSON.parse(data.toString()));
         } catch (e) {
-            callback(e);
+            // TODO: wrap e
+            this.fireCaughtError_(context, e);
         }
     };
     
@@ -46,19 +43,11 @@ Condotti.add('persia.handlers.json-codec', function (C) {
      * Encode the outbound message into JSON string
      * 
      * @method handleOutbound
+     * @param {Object} context the context object for the pipeline
      * @param {Object} data the message to be encoded
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
      */
-    JsonCodecHandler.prototype.handleOutbound = function (data, callback) {
-        try {
-            callback(null, new Buffer(JSON.stringify(data)));
-        } catch (e) {
-            callback(e);
-        }
+    JsonCodecHandler.prototype.handleOutbound = function (context, data) {
+        this.fireOutbound_(context, new Buffer(JSON.stringify(data)));
     };
     
     C.namespace('persia.handlers').JsonCodecHandler = JsonCodecHandler;

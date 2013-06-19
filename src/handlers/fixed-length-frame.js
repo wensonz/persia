@@ -56,20 +56,15 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
      * Add the 32bit header to the passed-in data to construct a data frame.
      * 
      * @method handleOutbound
+     * @param {Object} context the context object for the pipeline
      * @param {Buffer} data the data buffer to be handled
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
      */
-    FixedLengthFrameHandler.prototype.handleOutbound = function (data, 
-                                                                 callback) {
+    FixedLengthFrameHandler.prototype.handleOutbound = function (context, data) {
         var frame = new Buffer(4 + data.length);
         // TODO: verify if the data is a buffer
         frame.writeUInt32LE(data.length, 0);
         data.copy(frame, 4);
-        callback(null, frame);
+        this.fireOutbound_(context, frame);
     };
     
     /**
@@ -78,16 +73,13 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
      * frame has been received.
      * 
      * @method handleInbound
+     * @param {Object} context the context object for the pipeline
      * @param {Buffer} data the data to be handled
-     * @param {Function} callback the callback function to be invoked after the
-     *                            passed-in data/message has been successfully
-     *                            handled, or some error occurs. The signature
-     *                            of the callback is 
-     *                            'function (error, result) {}'
      */
-    FixedLengthFrameHandler.prototype.handleInbound = function (data, callback) {
+    FixedLengthFrameHandler.prototype.handleInbound = function (context, data) {
         var left = data.length,
             start = 0,
+            part = null,
             result = [];
         
         this.logger_.debug('Handling inbound ' + data.length + 
@@ -95,24 +87,15 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
         
         while (left > 0) {
             start = data.length - left;
-            if (null === this.header_) { // body is on going
-                left -= this.handleBody_(data, start);
-                if (null !== this.header_) { // body is ready
-                    result.push(this.body_);
-                    this.body_ = null;
-                }
-            } else { // header is onging, which rarely happen
-                left -= this.handleHeader_(data, start);
+            
+            part = this.header_ ? 'Header' : 'Body';
+            left -= this['handle' + part + '_'](data, start);
+            
+            if (!this.header_ && this.body_) { // body is ready
+                this.fireInbound_(context, this.body_);
+                this.body_ = null;
             }
         }
-        
-        if (result.length > 0) {
-            callback(null, result.length > 1 ? result : result[0]);
-        }
-        
-        // TODO: add logging here
-        //       packet is not ready now
-        // callback(); // silently ignored
     };
     
     /**
@@ -128,12 +111,15 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
         
         this.logger_.debug('Processing left ' + left + 
                            ' bytes of body data ...');
+                           
         if (left >= this.needed_) {
             this.logger_.debug('Left of the received data: ' + left + 
                                ' is more than body needed: ' + 
                                this.needed_);
-            data.copy(this.body_, this.body_.length - this.needed_, 
-                      start, start + this.needed_);
+                               
+            data.copy(this.body_, this.body_.length - this.needed_, start,
+                      start + this.needed_);
+                      
             this.logger_.debug('Current body is ready.');
             left -= this.needed_;
             this.logger_.debug('Recieved data has left ' + left + 
@@ -146,11 +132,10 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
             this.logger_.debug('Left of the received data: ' + left + 
                                ' can not fulfill the body requirement: ' +
                                this.needed_);
-            data.copy(this.body_, this.body_.length - this.needed_, 
-                      start);
+            data.copy(this.body_, this.body_.length - this.needed_, start);
             this.needed_ -= left;
-            this.logger_.debug('Current body still needs ' + 
-                               this.needed_ + ' byte(s).');
+            this.logger_.debug('Current body still needs ' + this.needed_ + 
+                               ' byte(s).');
             left = 0;
         }
         

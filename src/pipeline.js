@@ -43,20 +43,12 @@ Condotti.add('persia.pipeline', function (C) {
         this.transport_ = context.transport;
         
         /**
-         * The inbound pipeline handler collection
+         * The pipeline handler collection
          * 
-         * @property inbounds_
+         * @property handlers_
          * @type Array
          */
-        this.inbounds_ = context.handlers;
-        
-        /**
-         * The outbound pipeline handler collection
-         * 
-         * @property outbounds_
-         * @type Array
-         */
-        this.outbounds_ = null;
+        this.handlers_ = context.handlers;
         
         /**
          * The logger instance for this pipeline
@@ -89,15 +81,15 @@ Condotti.add('persia.pipeline', function (C) {
      * @method initialize_
      */
     Pipeline.prototype.initialize_ = function () {
+        var first = null;
         
-        this.outbounds_ = this.inbounds_.slice(0);
-        this.outbounds_.reverse();
-        this.outbounds_.push(
-            new C.persia.handlers.TransportHandler()
-        );
-        
-        this.context_.inbounds = this.inbounds_;
-        this.context_.outbounds = this.outbounds_;
+        first = new C.persia.handlers.TransportHandler();
+        this.handlers_.reduce(function (previous, current) {
+            previous.next = current;
+            current.prev = previous;
+            return current;
+        }, first);
+        this.handlers_.unshift(first);
         this.context_.pipeline = this;
         
         this.transport_.on('data', this.onTransportData_.bind(this));
@@ -107,34 +99,13 @@ Condotti.add('persia.pipeline', function (C) {
     };
     
     /**
-     * Clone the context object
-     *
-     * @method cloneContext_
-     * @return {Object} the cloned context object
-     */
-    Pipeline.prototype.cloneContext_ = function () {
-        var context = {},
-            key = null;
-        
-        for (key in this.context_) {
-            context[key] = this.context_[key];
-        }
-        
-        return context;
-    };
-    
-    
-    /**
      * The "data" event handler for the underlying transport
      *
      * @method onTransportData_
      * @param {Buffer} data the received data from the underlying transport
      */
     Pipeline.prototype.onTransportData_ = function (data) {
-        var context = null;
-            
-        context = this.cloneContext_();
-        this.handlers_[0].handleInbound(context, data);
+        this.handlers_[0].handleInbound(this.context_, data);
     };
     
     /**
@@ -142,37 +113,12 @@ Condotti.add('persia.pipeline', function (C) {
      * 
      * @method write
      * @param {Object} data the data to be written down
-     * @param {Function} callback the callback function to be invoked after the
-     *                            message has been successfully written down to
-     *                            the underlying transport, or some error
-     *                            occurs. The signature of the callback is
-     *                            'function (error) {}'
      */
-    Pipeline.prototype.write = function (data, callback) {
-        var self = this,
-            context = null;
+    Pipeline.prototype.write = function (data) {
+        var handler = null;
         
-        context = this.cloneContext_();
-        // context.callback = function ()
-        
-        C.async.reduce(this.outbounds_, data, function (reduced, handler, 
-                                                        next) {
-            logger.done(reduced);
-            logger.start('Handling outbound data ' + 
-                         C.lang.reflect.inspect(reduced) + ' with handler ' +
-                         handler.name);
-                         
-            handler.handleOutbound(reduced, next);
-            
-        }, function (error) {
-            if (error) {
-                logger.error(error);
-            } else {
-                logger.done();
-            }
-            
-            callback && callback(error);
-        });
+        handler = this.handlers_[this.handlers_.length - 1];
+        handler.handleOutbound(this.context_, data);
     };
     
     /**

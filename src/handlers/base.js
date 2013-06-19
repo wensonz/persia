@@ -53,7 +53,7 @@ Condotti.add('persia.handlers.base', function (C) {
     }
     
     /**
-     * Handle the inbound data and invoke the specified callback
+     * Handle the inbound data and invoke the next handler in the chain
      * 
      * @method handleInbound
      * @param {Object} context the context object for the pipeline
@@ -64,7 +64,7 @@ Condotti.add('persia.handlers.base', function (C) {
     };
     
     /**
-     * Handle the outbound data and invoke the specified callback
+     * Handle the outbound data and invoke the next handler in the chain
      * 
      * @method handleOutbound
      * @param {Object} context the context object for the pipeline
@@ -72,6 +72,17 @@ Condotti.add('persia.handlers.base', function (C) {
      */
     Handler.prototype.handleOutbound = function (context, data) {
         this.fireOutbound_(context, data);
+    };
+    
+    /**
+     * Handle the caught error and invoke the next handler in the chain
+     * 
+     * @method handleCaughtError
+     * @param {Object} context the context object for the pipeline
+     * @param {Error} error the error caught
+     */
+    Handler.prototype.handleCaughtError = function (context, error) {
+        this.fireCaughtError_(context, error);
     };
     
     /**
@@ -109,6 +120,25 @@ Condotti.add('persia.handlers.base', function (C) {
         
         C.lang.nextTick(function () {
             handler.handleOutbound(context, data);
+        });
+    };
+    
+    /**
+     * Find the next inbound handler and invoke it with the error caught
+     * 
+     * @method fireCaughtError_
+     * @param {Object} context the context object for the pipeline
+     * @param {Error} error the error caught
+     */
+    Handler.prototype.fireCaughtError_ = function (context, error) {
+        var handler = this.next;
+        
+        if (!handler) {
+            return;
+        }
+        
+        C.lang.nextTick(function () {
+            handler.handleCaughtError(context, error);
         });
     };
     

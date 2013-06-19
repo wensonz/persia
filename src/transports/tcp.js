@@ -102,34 +102,45 @@ Condotti.add('persia.transports.tcp', function (C) {
      * Connect this transport to the specified server
      * 
      * @method connect
-     * @param {Function} callback the callback function to be invoked after the
-     *                            transport has successfully connected to the
-     *                            desired server, or some error occurs. The
-     *                            signature of the callback is 
-     *                            'function (error) {}'
      */
-    TcpTransport.prototype.connect = function (callback) {
+    TcpTransport.prototype.connect = function () {
         var self = this,
             logger = C.logging.getStepLogger(this.logger_),
-            socket = null;
+            socket = null,
+            events = ['connect', 'error'],
+            handlers = {};
         
         socket = new C.natives.net.Socket();
-        this.bindSocketEvents_(socket);
         
-        logger.start('Connecting to ' + this.host_ + ':' + this.port_);
-        socket.connect({
-            host: this.host_, port: this.port_ 
-        }, function (error) {
-            if (error) {
-                logger.error(error);
-                callback(error);
-                return;
-            }
+        handlers.connect = function () {
             logger.done();
+            
+            events.forEach(function (event) {
+                socket.removeListener(event, handlers[event]);
+            });
+            
+            self.bindSocketEvents_(socket);
             self.socket_ = socket;
             self.writable = true;
-            callback();
+            self.emit('connect');
+        };
+        
+        handlers.error = function (error) {
+            logger.error(error);
+            
+            events.forEach(function (event) {
+                socket.removeListener(event, handlers[event]);
+            });
+            
+            self.emit('error', error);
+        };
+        
+        logger.start('Connecting to ' + this.host_ + ':' + this.port_);
+        events.forEach(function (event) {
+            socket.once(event, handlers[event]);
         });
+        
+        socket.connect({ host: this.host_, port: this.port_ });
     };
     
     /**
@@ -148,8 +159,6 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @method onSocketDrain_
      */
     TcpTransport.prototype.onSocketDrain_ = function() {
-        this.logger_.debug('The underlying socket ' + this.id + 
-                           ' is now writable.');
         this.writable = true;
         this.emit('drain');
     };
@@ -160,8 +169,6 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @method onSocketEnd_
      */
     TcpTransport.prototype.onSocketEnd_ = function() {
-        this.logger_.debug('Peer ' + this.host_ + ':' + this.port_ + 
-                           ' has closed the connection.');
         this.writable = false;
         this.socket_ = null;
         this.emit('end');
@@ -174,8 +181,6 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @param {Error} error the error occurs
      */
     TcpTransport.prototype.onSocketError_ = function(error) {
-        this.logger_.debug('The underlying socket ' + this.id + 
-                           ' fails. Error: ' + C.lang.reflect.inspect(error));
         this.socket_.destroy();
         this.writable = false;
         this.socket_ = null;
@@ -187,42 +192,31 @@ Condotti.add('persia.transports.tcp', function (C) {
      *
      * @method write
      * @param {Buffer} data the data buffer to be written
-     * @param {Function} callback the callback function to be invoked after the
-     *                            data has been successfully written.
      */
-    TcpTransport.prototype.write = function(data, callback) {
+    TcpTransport.prototype.write = function(data) {
         var logger = null;
         
         if (!this.writable) {
             this.logger_.error('Underlying socket ' + this.id + 
                                ' is not writable');
-            callback(new C.persia.errors.ShouldPauseError(this));
-            return;
+            throw new C.persia.errors.ShouldPauseError(this);
         }
         
         
         this.logger_.debug('Writing ' + data.length + 
                      ' bytes onto underlying socket ' + this.id + ' ...');
-        this.writable = this.socket_.write(data, callback);
+        this.writable = this.socket_.write(data);
     };
     
     /**
      * Close this socket
      *
      * @method close
-     * @param {Function} callback the callback function to be invoked after the
-     *                   socket is closed. However, since net.Socket does not
-     *                   provide a hook or callback to notify the caller when
-     *                   the socket is closed, the passed-in callback is
-     *                   triggered once the `net.Socket.end` returns.
      */
-    TcpTransport.prototype.close = function(callback) {
-        
+    TcpTransport.prototype.close = function() {
         this.socket_.end();
         this.socket_ = null;
         this.writable = false;
-        
-        callback && callback();
     };
     
     C.namespace('persia.transports.tcp').TcpTransport = TcpTransport;
@@ -294,39 +288,45 @@ Condotti.add('persia.transports.tcp', function (C) {
      * Start this TCP server by calling its listen method
      *
      * @method listen
-     * @param {Function} callback the callback function to be invoked when the
-     *                            server is listening on the desired port, or
-     *                            some error occurs.
      */
-    TcpServerTransport.prototype.listen = function(callback) {
+    TcpServerTransport.prototype.listen = function() {
         var logger = C.logging.getStepLogger(this.logger_),
             self = this,
             server = null,
-            handler = null;
+            events = ['listening', 'error'],
+            handlers = {};
             
         if (null !== this.server_) {
             this.logger_.debug('The underlying tcp server ' + this.id + 
                                ' has already been running.');
-            callback();
             return;
         }
         
-        server = C.natives.net.createServer(this.onSocketConnected_.bind(this));
-        handler = function (error) {
+        handlers.error = function (error) {
             logger.error(error);
-            callback(error);
+            events.forEach(function (event) {
+                server.removeListener(event, handlers[event]);
+            });
+            self.emit('error', error);
         };
-        server.once('error', handler);
+        
+        handlers.listening = function () {
+            logger.done();
+            events.forEach(function (event) {
+                server.removeListener(event, handlers[event]);
+            });
+            self.server_ = server;
+            self.emit('listening');
+        };
+        
+        server = C.natives.net.createServer(this.onSocketConnected_.bind(this));
+        events.forEach(function (event) {
+            server.once(event, handlers[event]);
+        });
         
         logger.start('Starting the underlying TCP server @' + this.address_ + 
                      ':' + this.port_);
-        
-        server.listen(this.port_, this.address_, function () {
-            logger.done();
-            server.removeListener('error', handler);
-            self.server_ = server;
-            callback();
-        });
+        server.listen(this.port_, this.address_);
     };
     
     /**
@@ -348,19 +348,22 @@ Condotti.add('persia.transports.tcp', function (C) {
      * Close this TCP server transport.
      *
      * @method close
-     * @param {Function} callback the callback function to be invoked after the
-     *                            internal socket server is closed.
      */
-    TcpServerTransport.prototype.close = function(callback) {
+    TcpServerTransport.prototype.close = function() {
         var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+            logger = C.logging.getStepLogger(this.logger_),
+            handler = null;
         
         logger.start('Stopping the underlying TCP server socket ' + this.id);
-        this.server_.close(function () {
+        handler = function () {
+            self.server_.removeListener('close', handler);
             self.server_ = null;
             logger.done();
-            callback();
-        });
+            self.emit('close');
+        };
+        this.server_.once('close', handler);
+        
+        this.server_.close();
     };
     
     C.namespace('persia.transports.tcp').TcpServerTransport = TcpServerTransport;
@@ -372,45 +375,57 @@ Condotti.add('persia.transports.tcp', function (C) {
      *
      * @class TransportFactory
      * @constructor
+     * @extends TransportFactory
+     * @param {Object} config the config object for this factory
      */
-    function TcpTransportFactory () {
+    function TcpTransportFactory (config) {
+        /* inheritance */
+        this.super();
+        
         /**
-         * The logger instance for this factory
-         *
-         * @property logger_
-         * @type Logger
+         * The host for the transport to connect to, or for the server transport
+         * to bind on
+         * 
+         * @property host_
+         * @type String
+         * @deafult null
          */
-        this.logger_ = C.logging.getObjectLogger(this);
+        this.host_ = config.host;
+        
+        /**
+         * The port for the transport to connect to, or for the server transport
+         * to bind on
+         * 
+         * @property port_
+         * @type Number
+         */
+        this.port_ = config.port;
     }
     
+    C.lang.inherit(TcpTransportFactory, C.persia.transports.TransportFactory);
+    
     /**
-     * Create a client transport
+     * Create a TCP client transport
      *
      * @method createTransport
-     * @param {}  
-     * @return {Transport} the new created client transport
+     * @return {TcpTransport} the new created client transport
      */
-    TransportFactory.prototype.createTransport = function () {
-        throw new C.errors.NotImplementedError('Method createTransport is not' +
-                                               ' implemented in this class,' +
-                                               ' and is expected to be ' +
-                                               'overwritten in child ' +
-                                               'classes');
+    TcpTransportFactory.prototype.createTransport = function () {
+        return new TcpTransport({ host: this.host_, port: this.port_ });
     };
     
     /**
-     * Create a server transport
+     * Create a TCP server transport
      *
      * @method createServerTransport
-     * @param {}  
-     * @return {ServerTransport} the new created server transport
+     * @return {TcpServerTransport} the new created server transport
      */
     TransportFactory.prototype.createServerTransport = function () {
-        throw new C.errors.NotImplementedError('Method createServerTransport ' +
-                                               'is not implemented in this ' +
-                                               'class, and is expected to be ' +
-                                               'overwritten in child ' +
-                                               'classes');
+        return new TcpServerTransport({ 
+            address: this.host_, port: this.port_ 
+        });
     };
+    
+    C.namespace('persia.transports.tcp').TcpTransportFactory = TcpTransportFactory;
     
 }, '0.0.1', { requires: ['persia.transports.base'] });
