@@ -21,7 +21,7 @@ Condotti.add('persia.handlers.json-codec', function (C) {
         this.super();
     }
     
-    C.lang.inherit(JsonCodecHandler, C.persia.pipeline.Handler);
+    C.lang.inherit(JsonCodecHandler, C.persia.handlers.Handler);
     
     /**
      * Decode the inbound data as JSON string into message object
@@ -31,6 +31,7 @@ Condotti.add('persia.handlers.json-codec', function (C) {
      * @param {Buffer} data the data to be decoded
      */
     JsonCodecHandler.prototype.handleInbound = function (context, data) {
+        
         try {
             this.fireInbound_(context, JSON.parse(data.toString()));
         } catch (e) {

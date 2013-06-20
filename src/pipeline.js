@@ -118,6 +118,8 @@ Condotti.add('persia.pipeline', function (C) {
         var handler = null;
         
         handler = this.handlers_[this.handlers_.length - 1];
+        this.logger_.debug('Invoking the handler ' + handler.name + ' on data' +
+                           C.lang.reflect.inspect(data));
         handler.handleOutbound(this.context_, data);
     };
     

@@ -119,7 +119,7 @@ Condotti.add('persia.handlers.base', function (C) {
         }
         
         C.lang.nextTick(function () {
-            handler.handleOutbound(context, data);
+            handler.handleInbound(context, data);
         });
     };
     

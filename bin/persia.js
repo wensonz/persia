@@ -1,12 +1,24 @@
 var natives = require('natives'),
     condotti = require('condotti'),
-    config = require(natives.path.resolve(__dirname, '../config/config.json'),
+    config = null,
     C = null,
     logger = null,
     name = null,
-    step = null;
+    step = null,
+    path = null;
 
 //============  PROGRAM START HERE  ===============
+path = process.argv[2] || natives.path.resolve(__dirname, 
+                                               '../config/config.json');
+
+try {
+    config = require(path);
+} catch (e) {
+    console.error('Loading config from file ' + path + ' failed. Error: ' +
+                  e.toString());
+    process.exit(1);
+}
+
 C = condotti.Condotti(config.condotti);
 
 name = natives.path.basename(__filename, '.js');

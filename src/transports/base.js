@@ -71,7 +71,7 @@ Condotti.add('persia.transports.base', function (C) {
                                                'implemented in this class,' +
                                                ' and is expected to be ' +
                                                'overwritten in child ' +
-                                               'classes'));
+                                               'classes');
     };
     
     /**
@@ -99,7 +99,7 @@ Condotti.add('persia.transports.base', function (C) {
                                                'implemented in this class,' +
                                                ' and is expected to be ' +
                                                'overwritten in child ' +
-                                               'classes'));
+                                               'classes');
     };
     
     /**
@@ -112,7 +112,7 @@ Condotti.add('persia.transports.base', function (C) {
                                                'implemented in this class,' +
                                                ' and is expected to be ' +
                                                'overwritten in child ' +
-                                               'classes'));
+                                               'classes');
     };
 
     /**
@@ -213,7 +213,7 @@ Condotti.add('persia.transports.base', function (C) {
                                                'this class, '+
                                                'and is expected to' +
                                                ' be overwritten in' +
-                                               ' child classes.'));
+                                               ' child classes.');
     };
 
 
@@ -228,7 +228,7 @@ Condotti.add('persia.transports.base', function (C) {
                                                   'this class, ' +
                                                   'and is expected to' +
                                                   ' be overwritten in' +
-                                                  ' child classes'));
+                                                  ' child classes');
     };
     
     /**

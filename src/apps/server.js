@@ -16,9 +16,9 @@ Condotti.add('persia.apps.server', function (C) {
      * @param {DottiFactory} factory the dotti factory used to initialize 
      *                               internal components
      */
-    function ServerApp (config) {
+    function ServerApp (config, factory) {
         /* inheritance */
-        this.super(config);
+        this.super(config, factory);
         
         /**
          * The internal server transport
@@ -56,15 +56,15 @@ Condotti.add('persia.apps.server', function (C) {
         this.logger_.info('[ START ] Initializing the server application ...');
         
         this.logger_.debug('Loading the pipeline handlers ' + 
-                           config.handlers.toString() + ' ...');
+                           this.config_.handlers.toString() + ' ...');
         // TODO: error handling when handler not exist 
-        this.handlers_ = config.handlers.map(function (handler) {
+        this.handlers_ = this.config_.handlers.map(function (handler) {
             return self.factory_.get(handler);
         });
         
         this.logger_.debug('Creating the internal server ...');
         factory = this.factory_.get('transport');
-        this.server_ = factory.createTransportServer();
+        this.server_ = factory.createServerTransport();
         this.server_.on('transport', this.onTransportConnected_.bind(this));
         
         this.logger_.debug('[ OK ] Server application is initialized.');
@@ -79,6 +79,10 @@ Condotti.add('persia.apps.server', function (C) {
     ServerApp.prototype.onTransportConnected_ = function (transport) {
         // create a pipeline for the transport
         var context = {
+            factories: {
+                dotti: this.factory_,
+                topic: this.factory_.get('topic')
+            },
             transport: transport,
             handlers: this.handlers_
         };
@@ -97,13 +101,23 @@ Condotti.add('persia.apps.server', function (C) {
      *                            'function (error) {}'
      */
     ServerApp.prototype.run = function (callback) {
-        this.server_.listen(function (error) {
-            if (error) {
-                callback(error);
-                return;
-            }
-            // TODO: add event handler to "close" of this.server_
+        var self = this,
+            logger = C.logging.getStepLogger(this.logger_);
+        
+        logger.start('Starting the underlying server transport ' + 
+                     this.server_.id);
+                     
+        this.server_.once('listening', function () {
+            logger.done();
         });
+        
+        this.server_.once('error', function (error) {
+            logger.error(error);
+            callback(error);
+        });
+        
+        // TODO: add 'error' handler to exit this process
+        this.server_.listen();
     };
     
     C.namespace('persia.apps').ServerApp = ServerApp;

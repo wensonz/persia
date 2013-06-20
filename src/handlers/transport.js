@@ -32,7 +32,7 @@ Condotti.add('persia.handlers.transport', function (C) {
      * @param {Buffer} data the data to be handled
      */
     TransportHandler.prototype.handleOutbound = function (context, data) {
-        context.transport.write(data, context.callback);
+        context.transport.write(data);
     };
     
     C.namespace('persia.handlers').TransportHandler = TransportHandler;

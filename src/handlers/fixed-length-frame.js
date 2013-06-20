@@ -50,7 +50,7 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
         this.needed_ = 4;
     }
     
-    C.lang.inherit(FixedLengthFrameHandler, C.persia.pipeline.Handler);
+    C.lang.inherit(FixedLengthFrameHandler, C.persia.handlers.Handler);
     
     /**
      * Add the 32bit header to the passed-in data to construct a data frame.
@@ -91,7 +91,7 @@ Condotti.add('persia.handlers.fixed-length-frame', function (C) {
             part = this.header_ ? 'Header' : 'Body';
             left -= this['handle' + part + '_'](data, start);
             
-            if (!this.header_ && this.body_) { // body is ready
+            if (part === 'Body' && this.header_ && this.body_) {
                 this.fireInbound_(context, this.body_);
                 this.body_ = null;
             }

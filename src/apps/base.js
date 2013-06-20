@@ -18,7 +18,7 @@ Condotti.add('persia.apps.base', function (C) {
      * @param {DottiFactory} factory the dotti factory used to initialize 
      *                               internal components
      */
-    function App (config) {
+    function App (config, factory) {
         /* inheritance */
         this.super();
         

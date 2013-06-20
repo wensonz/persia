@@ -69,7 +69,7 @@ Condotti.add('persia.transports.tcp', function (C) {
         transport = new TcpTransport(config);
         transport.socket_ = socket;
         transport.writable = true;
-        transport.bindSocketEvents_();
+        transport.bindSocketEvents_(socket);
         
         return transport;
     };
@@ -420,7 +420,7 @@ Condotti.add('persia.transports.tcp', function (C) {
      * @method createServerTransport
      * @return {TcpServerTransport} the new created server transport
      */
-    TransportFactory.prototype.createServerTransport = function () {
+    TcpTransportFactory.prototype.createServerTransport = function () {
         return new TcpServerTransport({ 
             address: this.host_, port: this.port_ 
         });
