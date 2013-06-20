@@ -16,7 +16,7 @@ try {
 } catch (e) {
     console.error('Loading config from file ' + path + ' failed. Error: ' +
                   e.toString());
-    process.exit(1);
+    // process.exit(1);
 }
 
 C = condotti.Condotti(config.condotti);
@@ -51,11 +51,11 @@ C.async.waterfall([
     if (error) {
         step.error(error);
         logger.error('[ TERM ] Program ' + name + ' terminates abnormally.');
-        process.exit(1);
+        // process.exit(1);
         return;
     }
     
     step.done();
     logger.info('[ EXIT ] Program ' + name + ' exits normally.');
-    process.exit(0);
+    // process.exit(0);
 });

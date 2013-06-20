@@ -15,7 +15,17 @@ config = {
             "paths": {
                 "persia": "../src"
             }
-        }
+        },
+        "condotti.server.logging": { "log4js": {
+            "levels": {
+                "Condotti": "INFO",
+                "FixedLengthFrameHandler": "INFO"
+            },
+            "appenders": [
+                { "type": "console" }
+            ],
+            "replaceConsole": false
+        }}
     },
     "modules": [
         "persia.transports.tcp",
@@ -55,6 +65,20 @@ C.async.waterfall([
         handlers.push(new C.persia.handlers.FixedLengthFrameHandler());
         handlers.push(new C.persia.handlers.JsonCodecHandler());
         
+        //============  DATA HANDLER  ===========
+        function DataHandler() {
+            this.super();
+        }
+
+        C.lang.inherit(DataHandler, C.persia.handlers.Handler);
+
+        DataHandler.prototype.handleInbound = function (context, data) {
+            console.log('New message received: ' + C.lang.reflect.inspect(data));
+        };
+        //============ END OF DATA HANDLER ==========
+        
+        handlers.push(new DataHandler());
+        
         pipeline = new C.persia.Pipeline({
             transport: client, 
             handlers: handlers
@@ -67,19 +91,18 @@ C.async.waterfall([
     },
     function (next) {
         step.done();
-        step.start('Publishing data');
+        step.start('Sending the initial data');
+        pipeline.write({
+            type: 'SUBSCRIPTION',
+            topic: process.argv[2]
+        });
+        
         pipeline.write({
             type: 'PUBLISHING', 
-            topic: process.argv[2],
-            data: process.argv[3]
+            topic: process.argv[3],
+            data: JSON.parse(process.argv[4])
         });
         step.done();
-        
-        setTimeout(function () {
-            step.start('Closing the client transport');
-            client.close();
-            next();
-        }, 1000);
     }
 ], function (error) {
     if (error) {

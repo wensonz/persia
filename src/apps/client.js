@@ -74,12 +74,21 @@ Condotti.add('persia.apps.client', function (C) {
         this.logger_.debug('Creating the internal transport ...');
         factory = this.factory_.get('transport');
         this.transport_ = factory.createTransport();
+        this.transport_.on('error', function (error) {
+            self.logger_.error('Transport Error: ' + C.lang.reflect.inspect(error));
+        });
+        this.transport_.on('end', function () {
+            self.logger_.warn('Peer close transport');
+        });
+        
         this.pipeline_ = new C.persia.Pipeline({
             factories: {
                 dotti: this.factory_
             },
             transport: this.transport_,
-            handlers: this.handlers_
+            handlers: this.handlers_,
+            id: this.config_.id,
+            root: this.config_.root
         });
         
         this.logger_.debug('[ OK ] Client application is initialized.');
@@ -111,6 +120,10 @@ Condotti.add('persia.apps.client', function (C) {
             logger.error(error);
             callback(error);
         });
+        
+        setInterval(function () {
+            console.log('Heartbeat');
+        }, 1000);
         // TODO: add 'close' handler to exit this process
         logger.start('Starting the underlying transport ' + this.transport_.id);
         this.transport_.connect();

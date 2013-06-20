@@ -7,7 +7,8 @@
         },
         "condotti.server.logging": { "log4js": {
             "levels": {
-                "Condotti": "INFO"
+                "Condotti": "INFO",
+                "FixedLengthFrameHandler": "INFO"
             },
             "appenders": [
                 { "type": "console" }
@@ -30,7 +31,8 @@
             "params": {
                 "0": { "value": {
                     "handlers": ["frame", "json", "message"],
-                    "id": "127.0.0.1"
+                    "id": "node",
+                    "root": "/tmp"
                 }},
                 "1": { "reference": "dotti" }
             }
