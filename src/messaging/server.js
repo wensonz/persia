@@ -87,7 +87,7 @@ Condotti.add('persia.messaging.server', function (C) {
             this.logger_.error('Unsupported message type "' + data.type + 
                                '" is found.');
             this.handleOutbound(context, { 
-                type: "ERROR", 
+                type: 'ERROR', 
                 code: 415, // Unsupported Media Type
                 message: 'Message type "' + data.type + '" is not supported.' 
             });
@@ -140,7 +140,8 @@ Condotti.add('persia.messaging.server', function (C) {
                 factory.get(topic).removeListener(
                     'message', self.subscriptions_[topic]
                 );
-            })
+            });
+            self.subscriptions_ = {};
         };
         
         context.transport.on('end', handler);
@@ -185,8 +186,8 @@ Condotti.add('persia.messaging.server', function (C) {
             factory.get(topic).removeListener(
                 'message', self.subscriptions_[topic]
             );
-        })
-        
+        });
+        self.subscriptions_ = {};
         context.transport.close();
     };
     

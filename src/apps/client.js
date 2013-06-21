@@ -74,12 +74,6 @@ Condotti.add('persia.apps.client', function (C) {
         this.logger_.debug('Creating the internal transport ...');
         factory = this.factory_.get('transport');
         this.transport_ = factory.createTransport();
-        this.transport_.on('error', function (error) {
-            self.logger_.error('Transport Error: ' + C.lang.reflect.inspect(error));
-        });
-        this.transport_.on('end', function () {
-            self.logger_.warn('Peer close transport');
-        });
         
         this.pipeline_ = new C.persia.Pipeline({
             factories: {
@@ -105,25 +99,33 @@ Condotti.add('persia.apps.client', function (C) {
      */
     ClientApp.prototype.run = function (callback) {
         var self = this,
-            logger = C.logging.getStepLogger(this.logger_);
+            logger = C.logging.getStepLogger(this.logger_),
+            events = ['connect', 'error'],
+            handlers = {};
             
-        this.transport_.once('connect', function () {
+        handlers.connect = function () {
             logger.done();
+            self.transport_.removeListener('error', handlers.error);
+            self.transport_.on('end', callback);
+            self.transport_.on('error', callback);
+            
             // sending subscription message
             self.pipeline_.write({
                 type: 'SUBSCRIPTION',
                 topic: self.config_.id
             });
-        });
+        };
         
-        this.transport_.once('error', function (error) {
+        handlers.error = function (error) {
             logger.error(error);
+            self.transport_.removeListener('connect', handlers.connect);
             callback(error);
+        };
+        
+        events.forEach(function (event) {
+            self.transport_.once(event, handlers[event]);
         });
         
-        setInterval(function () {
-            console.log('Heartbeat');
-        }, 1000);
         // TODO: add 'close' handler to exit this process
         logger.start('Starting the underlying transport ' + this.transport_.id);
         this.transport_.connect();
